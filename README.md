@@ -5,19 +5,20 @@
 **Requires at least:** 5.0  
 **Tested up to:** 6.4  
 **Requires PHP:** 7.4  
-**Stable tag:** 1.0.95  
+**Stable tag:** 1.1.0  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-Export Custom Post Types to XML format with advanced filtering, optional deletion, and form value persistence.
+Export Custom Post Types to XML format with advanced filtering, optional deletion, archive XML or compressed, and form value persistence.
 
 ## Description
 
-CPT Export is a powerful WordPress plugin that allows you to export Custom Post Types to WordPress eXtended RSS (WXR) format with comprehensive filtering options. The plugin supports date ranges, author filtering, post status selection, and optional post deletion after export.
+CPT Export is a powerful WordPress plugin that allows you to export Custom Post Types to WordPress eXtended RSS (WXR) format with comprehensive filtering options. The plugin supports post types, categories, date ranges, author filtering, post status selection, and optional post deletion after export and download (XML or ZIP). The archive can be imported using Wordpress import tool.
 
 ### Key Features
 
 - **Export any Custom Post Type** to standard WordPress XML format
+  - Optional: Filter by Category
 - **Advanced filtering options:**
   - Filter by author
   - Filter by post status (publish, draft, private, pending, future)
