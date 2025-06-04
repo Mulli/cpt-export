@@ -1,0 +1,258 @@
+/**
+ * CPT Export Admin Styles
+ * 
+ * @package CPT_Export
+ * @version 1.0.97
+ */
+
+/* Form styling enhancements */
+#cpt-export-form .form-table th {
+    width: 200px;
+    font-weight: 600;
+}
+
+#cpt-export-form .form-table td {
+    vertical-align: top;
+}
+
+/* Post type selection styling */
+#cpt_post_type {
+    min-width: 300px;
+}
+
+#post-type-error-message {
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+/* Category selection styling */
+#cpt_category {
+    min-width: 300px;
+}
+
+#category-loading {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+#cpt_category:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Date range styling */
+#cpt_start_date,
+#cpt_end_date {
+    max-width: 150px;
+}
+
+/* Delete action styling */
+#cpt_export_and_delete:checked + label,
+#cpt_delete_permanently:checked + label,
+#cpt_delete_media:checked + label {
+    font-weight: bold;
+    color: #d63638; /* WordPress warning red */
+}
+
+#cpt_delete_permanently:disabled + label,
+#cpt_delete_media:disabled + label {
+    opacity: 0.5;
+    color: #666;
+    cursor: not-allowed;
+}
+
+#cpt_delete_permanently:disabled,
+#cpt_delete_media:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Ensure enabled checkboxes are clearly visible */
+#cpt_delete_permanently:not(:disabled) + label,
+#cpt_delete_media:not(:disabled) + label {
+    opacity: 1;
+    color: inherit;
+    cursor: pointer;
+}
+
+#cpt_delete_permanently:not(:disabled),
+#cpt_delete_media:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.delete-warning {
+    background: #fcf2f2;
+    border: 1px solid #e65054;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+/* Save folder styling */
+#cpt_save_folder {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Form memory notice styling */
+.notice.inline {
+    margin: 0 0 20px 0;
+    padding: 12px;
+}
+
+.notice.inline p {
+    margin: 0;
+}
+
+#reset-form-values {
+    text-decoration: none;
+    color: #2271b1;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: inherit;
+}
+
+#reset-form-values:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+/* Submit button enhancements */
+#submit.button-secondary {
+    background: #f6f7f7;
+    border-color: #dcdcde;
+    color: #2c3338;
+}
+
+#submit.button-secondary:hover {
+    background: #f0f0f1;
+    border-color: #c3c4c7;
+}
+
+/* Success/Error message styling */
+.cpt-export-message {
+    padding: 12px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.cpt-export-success {
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+    color: #0f5132;
+}
+
+.cpt-export-error {
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #842029;
+}
+
+.cpt-export-warning {
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #664d03;
+}
+
+.cpt-export-info {
+    background: #d1ecf1;
+    border: 1px solid #b6d7ff;
+    color: #055160;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media screen and (max-width: 782px) {
+    #cpt-export-form .form-table th,
+    #cpt-export-form .form-table td {
+        display: block;
+        width: 100%;
+        padding: 8px 0;
+    }
+    
+    #cpt-export-form .form-table th {
+        border-bottom: 0;
+        font-weight: 600;
+    }
+    
+    #cpt_post_type,
+    #cpt_category {
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    #cpt_save_folder {
+        width: 100%;
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    .loading::after {
+        animation: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .cpt-export-message {
+        border-width: 2px;
+    }
+    
+    #cpt_export_and_delete:checked + label,
+    #cpt_delete_permanently:checked + label,
+    #cpt_delete_media:checked + label {
+        text-decoration: underline;
+    }
+}
+
+/* Focus indicators */
+#cpt_post_type:focus,
+#cpt_category:focus,
+#cpt_author:focus,
+#cpt_status:focus,
+#cpt_start_date:focus,
+#cpt_end_date:focus,
+#cpt_save_folder:focus {
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: 2px solid transparent;
+}
+
+/* Print styles */
+@media print {
+    #cpt-export-form {
+        display: none;
+    }
+    
+    .notice {
+        border: 1px solid #000;
+        background: #fff !important;
+        color: #000 !important;
+    }
+}
