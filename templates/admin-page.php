@@ -203,6 +203,10 @@ if (isset($_GET['export_error']) && isset($_GET['_wpnonce']) && wp_verify_nonce(
                 </tr>
             </tbody>
         </table>
+        
+        <!-- Hidden field to ensure cpt_export_submit is always sent -->
+        <input type="hidden" name="cpt_export_submit" value="1">
+        
         <p class="submit">
             <input type="submit" name="cpt_export_submit" id="submit" class="button button-primary" value="<?php esc_attr_e('Download Export File', 'cpt-export'); ?>">
         </p>

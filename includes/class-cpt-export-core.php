@@ -17,7 +17,7 @@ class CPT_Export_Tool
 {
     const NONCE_ACTION = 'cpt_export_nonce_action';
     const USER_META_KEY = 'cpt_export_last_values';
-
+    
     private $admin_page_notices = [];
     private $xml_generator;
     private $file_handler;
@@ -27,14 +27,14 @@ class CPT_Export_Tool
         $this->admin_page_notices = [];
         $this->xml_generator = new CPT_Export_XML_Generator();
         $this->file_handler = new CPT_Export_File_Handler();
-
+        
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'handle_export_admin_request'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_shortcode('cpt_export', array($this, 'shortcode_handler'));
         add_action('admin_notices', array($this, 'translation_admin_notice'));
-
+        
         // Add AJAX handlers for category loading
         add_action('wp_ajax_cpt_export_get_categories', array($this, 'ajax_get_categories'));
     }
@@ -85,7 +85,7 @@ class CPT_Export_Tool
         if ($hook !== 'tools_page_cpt-export-tool') {
             return;
         }
-
+        
         // Enqueue CSS
         wp_enqueue_style(
             'cpt-export-admin',
@@ -93,7 +93,7 @@ class CPT_Export_Tool
             array(),
             CPT_EXPORT_VERSION
         );
-
+        
         // Enqueue JavaScript
         wp_enqueue_script('jquery');
         wp_enqueue_script(
@@ -103,7 +103,7 @@ class CPT_Export_Tool
             CPT_EXPORT_VERSION,
             true
         );
-
+        
         // Localize script for AJAX and translations
         wp_localize_script('cpt-export-admin', 'cpt_export_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -139,7 +139,7 @@ class CPT_Export_Tool
     {
         $user_id = get_current_user_id();
         $last_values = get_user_meta($user_id, self::USER_META_KEY, true);
-
+        
         $defaults = array(
             'cpt_post_type' => '',
             'cpt_category' => '',
@@ -167,7 +167,7 @@ class CPT_Export_Tool
     private function save_form_values($form_data)
     {
         $user_id = get_current_user_id();
-
+        
         $values_to_save = array(
             'cpt_post_type' => $form_data['cpt_post_type'],
             'cpt_category' => $form_data['cpt_category'],
@@ -273,7 +273,7 @@ class CPT_Export_Tool
     {
         // Include the admin page template
         $form_data = $this->get_last_form_values();
-
+        
         // Handle POST data override
         if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['cpt_export_nonce_field'])) {
             $defaults = $this->get_default_form_values();
@@ -285,14 +285,33 @@ class CPT_Export_Tool
                 }
             }
         }
-
+        
         // Include admin page template
         include CPT_EXPORT_PLUGIN_DIR . 'templates/admin-page.php';
     }
 
     public function handle_export_admin_request()
     {
+        // Debug: Log all POST data to see what's being sent
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('CPT Export DEBUG - POST data: ' . print_r($_POST, true));
+            error_log('CPT Export DEBUG - REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+        }
+
+        // Skip AJAX requests - they have their own handlers
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+
+        // Skip if this is an AJAX action
+        if (isset($_POST['action']) && $_POST['action'] === 'cpt_export_get_categories') {
+            return;
+        }
+
         if (!isset($_POST['cpt_export_submit']) || !isset($_POST['cpt_export_nonce_field'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('CPT Export DEBUG - Missing cpt_export_submit or nonce field');
+            }
             return;
         }
 
@@ -432,8 +451,8 @@ class CPT_Export_Tool
                 $args['tax_query'] = array(
                     array(
                         'taxonomy' => $term->taxonomy,
-                        'field' => 'term_id',
-                        'terms' => intval($category),
+                        'field'    => 'term_id',
+                        'terms'    => intval($category),
                     ),
                 );
             }
@@ -442,14 +461,18 @@ class CPT_Export_Tool
         if (!empty($start_date) || !empty($end_date)) {
             $date_query = array('inclusive' => true);
             if (!empty($start_date)) {
-                $date_query['after'] = $start_date . ' 00:00:00';
+                $date_query['after'] = array(
+                    'year'  => date('Y', strtotime($start_date)),
+                    'month' => date('m', strtotime($start_date)),
+                    'day'   => date('d', strtotime($start_date)),
+                    'inclusive' => true
+                );
             }
             if (!empty($end_date)) {
-                //$date_query['before'] = $end_date . ' 23:59:59';
                 $date_query['before'] = array(
-                    'year' => date('Y', strtotime($end_date)),
+                    'year'  => date('Y', strtotime($end_date)),
                     'month' => date('m', strtotime($end_date)),
-                    'day' => date('d', strtotime($end_date)),
+                    'day'   => date('d', strtotime($end_date)),
                     'inclusive' => true
                 );
             }
@@ -553,23 +576,21 @@ class CPT_Export_Tool
 
     private function delete_posts_and_media($posts, $attachments, $delete_permanently = false, $delete_media = false)
     {
-        // Delete media attachments if requested
         if ($delete_media && !empty($attachments)) {
             foreach ($attachments as $attachment) {
                 if ($attachment instanceof WP_Post && $attachment->post_type === 'attachment') {
-                    wp_delete_attachment($attachment->ID, true); // Always permanent for media
+                    wp_delete_attachment($attachment->ID, true);
                 }
             }
         }
 
-        // Delete or trash posts based on settings
         if (!empty($posts)) {
             foreach ($posts as $post) {
                 if ($post instanceof WP_Post) {
                     if ($delete_permanently) {
-                        wp_delete_post($post->ID, true); // Permanent deletion
+                        wp_delete_post($post->ID, true);
                     } else {
-                        wp_trash_post($post->ID); // Move to trash
+                        wp_trash_post($post->ID);
                     }
                 }
             }
@@ -723,5 +744,4 @@ class CPT_Export_Tool
     {
         return $this->admin_page_notices;
     }
-
 }

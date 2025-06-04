@@ -2,8 +2,8 @@
 /**
  * Plugin Name: CPT Export
  * Plugin URI: https://site2goal.co.il
- * Description: Export Custom Post Types to XML format with date range, author, and status filtering. Optionally delete after export.
- * Version: 1.1.1
+ * Description: Export Custom Post Types to XML format with filter for CPT type, category, date range, author, and status filtering. Optionally delete after export. Result in XML can be imported using standard Wordpress tool, or kept compressed.
+ * Version: 1.2.0
  * Author: Mulli Bahr & AI
  * Author URI: https://site2goal.co.il
  * Text Domain: cpt-export
@@ -59,7 +59,8 @@ require_once CPT_EXPORT_PLUGIN_DIR . 'includes/class-cpt-export-xml-generator.ph
 require_once CPT_EXPORT_PLUGIN_DIR . 'includes/class-cpt-export-file-handler.php';
 
 // Initialize the plugin
-function cpt_export_init() {
+function cpt_export_init()
+{
     new CPT_Export_Tool();
 }
 

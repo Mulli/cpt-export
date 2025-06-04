@@ -64,15 +64,32 @@ jQuery(document).ready(function ($) {
         $postTypeSelect.on('change', handlePostTypeChange);
 
         // Delete checkbox changes
-        $exportAndDeleteCheckbox.on('change', updateButtonTextAndInteractivity);
-        $deletePermanentlyCheckbox.on('change', updateButtonTextAndInteractivity);
-        $deleteMediaCheckbox.on('change', updateButtonTextAndInteractivity);
+        $exportAndDeleteCheckbox.on('change', function() {
+            updateButtonTextAndInteractivity();
+            clearFormConfirmation();
+        });
+        $deletePermanentlyCheckbox.on('change', function() {
+            updateButtonTextAndInteractivity();
+            clearFormConfirmation();
+        });
+        $deleteMediaCheckbox.on('change', function() {
+            updateButtonTextAndInteractivity();
+            clearFormConfirmation();
+        });
 
         // Save folder input change
         $saveFolderInput.on('input', debounce(updateButtonTextAndInteractivity, 250));
 
         // Form submission
         $exportForm.on('submit', handleFormSubmit);
+
+        // Clear confirmation flag when form changes
+        $exportForm.on('change input', clearFormConfirmation);
+    }
+
+    // Clear form confirmation flag
+    function clearFormConfirmation() {
+        $exportForm.removeData('confirmed');
     }
 
     // Handle form reset
@@ -81,6 +98,7 @@ jQuery(document).ready(function ($) {
         if (confirm(cpt_export_ajax.strings.reset_confirm)) {
             resetFormToDefaults();
             updateButtonTextAndInteractivity();
+            clearFormConfirmation();
             $(this).closest('.notice').fadeOut();
         }
     }
@@ -104,6 +122,7 @@ jQuery(document).ready(function ($) {
     function handlePostTypeChange() {
         var postType = $(this).val();
         loadCategories(postType, '');
+        clearFormConfirmation();
     }
 
     // Load categories based on post type
@@ -185,8 +204,15 @@ jQuery(document).ready(function ($) {
         $submitButton.val(buttonText);
     }
 
-// Handle form submission
+    // Handle form submission
     function handleFormSubmit(e) {
+        // Debug: Log form submission details
+        console.log('CPT Export: Form submission started');
+        console.log('CPT Export: Submit button name:', $submitButton.attr('name'));
+        console.log('CPT Export: Submit button value:', $submitButton.val());
+        console.log('CPT Export: Form action:', $exportForm.attr('action'));
+        console.log('CPT Export: Form method:', $exportForm.attr('method'));
+
         // Reset previous errors
         $postTypeError.hide();
         $deleteConfirmationPlaceholder.empty();
@@ -197,43 +223,66 @@ jQuery(document).ready(function ($) {
             e.preventDefault();
             $postTypeError.show();
             $postTypeSelect.focus();
+            console.log('CPT Export: Form submission prevented - no post type selected');
             return false;
         }
 
-        // Handle delete confirmations
+        // Handle delete confirmations - but only prevent if user cancels
         if ($exportAndDeleteCheckbox.is(':checked')) {
-            var isPermanent = $deletePermanentlyCheckbox.is(':checked');
-            var isDeleteMedia = $deleteMediaCheckbox.is(':checked');
-            var confirmMessage = '';
-            var modalTitle = '';
+            // Check if we've already confirmed this submission
+            if (!$exportForm.data('confirmed')) {
+                var isPermanent = $deletePermanentlyCheckbox.is(':checked');
+                var isDeleteMedia = $deleteMediaCheckbox.is(':checked');
+                var confirmMessage = '';
+                var modalTitle = '';
 
-            // Determine confirmation message based on selected actions
-            if (isPermanent && isDeleteMedia) {
-                modalTitle = cpt_export_ajax.strings.confirm_permanent_deletion;
-                confirmMessage = cpt_export_ajax.strings.warning_permanent_delete_posts_media;
-            } else if (isPermanent) {
-                modalTitle = cpt_export_ajax.strings.confirm_permanent_deletion;
-                confirmMessage = cpt_export_ajax.strings.warning_permanent_delete_posts;
-            } else if (isDeleteMedia) {
-                modalTitle = cpt_export_ajax.strings.confirm_media_deletion;
-                confirmMessage = cpt_export_ajax.strings.warning_delete_media;
+                // Determine confirmation message based on selected actions
+                if (isPermanent && isDeleteMedia) {
+                    modalTitle = cpt_export_ajax.strings.confirm_permanent_deletion;
+                    confirmMessage = cpt_export_ajax.strings.warning_permanent_delete_posts_media;
+                } else if (isPermanent) {
+                    modalTitle = cpt_export_ajax.strings.confirm_permanent_deletion;
+                    confirmMessage = cpt_export_ajax.strings.warning_permanent_delete_posts;
+                } else if (isDeleteMedia) {
+                    modalTitle = cpt_export_ajax.strings.confirm_media_deletion;
+                    confirmMessage = cpt_export_ajax.strings.warning_delete_media;
+                } else {
+                    modalTitle = cpt_export_ajax.strings.confirm_move_trash;
+                    confirmMessage = cpt_export_ajax.strings.warning_move_trash;
+                }
+
+                // Show confirmation dialog
+                console.log('CPT Export: Showing confirmation dialog');
+                if (confirm(modalTitle + '\n\n' + confirmMessage)) {
+                    // User confirmed - mark form as confirmed and allow submission
+                    $exportForm.data('confirmed', true);
+                    console.log('CPT Export: User confirmed deletion, proceeding with submission');
+                } else {
+                    // User cancelled - prevent submission
+                    e.preventDefault();
+                    console.log('CPT Export: User cancelled deletion, preventing submission');
+                    return false;
+                }
             } else {
-                modalTitle = cpt_export_ajax.strings.confirm_move_trash;
-                confirmMessage = cpt_export_ajax.strings.warning_move_trash;
-            }
-
-            // Show confirmation dialog
-            if (!confirm(modalTitle + '\n\n' + confirmMessage)) {
-                e.preventDefault();
-                return false;
+                console.log('CPT Export: Form already confirmed, proceeding');
             }
         }
 
-        // Add loading state to form
-        $submitButton.prop('disabled', true).addClass('loading');
-        $exportForm.addClass('loading');
+        // Ensure submit button has the correct attributes
+        if (!$submitButton.attr('name') || $submitButton.attr('name') !== 'cpt_export_submit') {
+            console.log('CPT Export: Fixing submit button name attribute');
+            $submitButton.attr('name', 'cpt_export_submit');
+        }
 
-        // Allow form to submit
+        console.log('CPT Export: Form submission proceeding - button name:', $submitButton.attr('name'));
+        
+        // Use setTimeout to add loading state AFTER form submission starts
+        setTimeout(function() {
+            $submitButton.prop('disabled', true).addClass('loading');
+            $exportForm.addClass('loading');
+        }, 10);
+        
+        // Allow form to submit immediately
         return true;
     }
 
@@ -251,124 +300,125 @@ jQuery(document).ready(function ($) {
             });
         }, duration);
     }
-});
 
-// Handle AJAX errors globally
-$(document).ajaxError(function(event, xhr, settings, thrownError) {
-    if (settings.url === cpt_export_ajax.ajax_url) {
-        console.error('CPT Export AJAX Error:', {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            responseText: xhr.responseText,
-            thrownError: thrownError
+    // Handle AJAX errors globally
+    $(document).ajaxError(function(event, xhr, settings, thrownError) {
+        if (settings.url === cpt_export_ajax.ajax_url) {
+            console.error('CPT Export AJAX Error:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                thrownError: thrownError
+            });
+        }
+    });
+
+    // Handle browser back/forward navigation
+    $(window).on('popstate', function() {
+        // Reset form loading states if user navigates away and back
+        $submitButton.prop('disabled', false).removeClass('loading');
+        $exportForm.removeClass('loading');
+        clearFormConfirmation();
+    });
+
+    // Keyboard shortcuts
+    $(document).on('keydown', function(e) {
+        // Ctrl/Cmd + Enter to submit form
+        if ((e.ctrlKey || e.metaKey) && e.keyCode === 13) {
+            if ($exportForm.length && $postTypeSelect.val()) {
+                $exportForm.submit();
+            }
+        }
+        
+        // Escape key to clear form errors
+        if (e.keyCode === 27) {
+            $postTypeError.hide();
+            $deleteConfirmationPlaceholder.empty();
+        }
+    });
+
+    // Auto-save form state to localStorage for persistence across browser sessions
+    // (Only if browser supports localStorage)
+    if (typeof(Storage) !== "undefined") {
+        // Save form state periodically
+        setInterval(function() {
+            saveFormState();
+        }, 30000); // Every 30 seconds
+
+        // Save on form change
+        $exportForm.on('change input', debounce(saveFormState, 1000));
+
+        function saveFormState() {
+            try {
+                var formState = {
+                    post_type: $postTypeSelect.val(),
+                    category: $categorySelect.val(),
+                    author: $('#cpt_author').val(),
+                    status: $('#cpt_status').val(),
+                    start_date: $('#cpt_start_date').val(),
+                    end_date: $('#cpt_end_date').val(),
+                    save_folder: $saveFolderInput.val(),
+                    compress: $('#cpt_compress').is(':checked'),
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('cpt_export_form_state', JSON.stringify(formState));
+            } catch(e) {
+                // Fail silently if localStorage is not available or full
+                console.warn('Could not save form state to localStorage:', e);
+            }
+        }
+    }
+
+    // Accessibility improvements
+    function enhanceAccessibility() {
+        // Add ARIA labels for better screen reader support
+        $postTypeSelect.attr('aria-describedby', 'post-type-description');
+        $categorySelect.attr('aria-describedby', 'category-description');
+        
+        // Add live region for dynamic content
+        if (!$('#cpt-export-live-region').length) {
+            $('body').append('<div id="cpt-export-live-region" aria-live="polite" aria-atomic="true" style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;"></div>');
+        }
+        
+        var $liveRegion = $('#cpt-export-live-region');
+        
+        // Announce category loading
+        $categoryLoading.on('show', function() {
+            $liveRegion.text('Loading categories for selected post type');
+        });
+        
+        // Announce when categories are loaded
+        $categorySelect.on('change', function() {
+            var count = $(this).find('option').length - 1; // Subtract "All categories" option
+            if (count > 0) {
+                $liveRegion.text(count + ' categories available for filtering');
+            }
         });
     }
+
+    // Initialize accessibility enhancements
+    enhanceAccessibility();
+
+    // Development mode helpers (only in debug mode)
+    if (window.cpt_export_debug) {
+        window.cptExportDebug = {
+            getFormData: function() {
+                return {
+                    post_type: $postTypeSelect.val(),
+                    category: $categorySelect.val(),
+                    author: $('#cpt_author').val(),
+                    status: $('#cpt_status').val(),
+                    start_date: $('#cpt_start_date').val(),
+                    end_date: $('#cpt_end_date').val(),
+                    export_and_delete: $exportAndDeleteCheckbox.is(':checked'),
+                    delete_permanently: $deletePermanentlyCheckbox.is(':checked'),
+                    delete_media: $deleteMediaCheckbox.is(':checked'),
+                    save_folder: $saveFolderInput.val(),
+                    compress: $('#cpt_compress').is(':checked')
+                };
+            },
+            resetForm: resetFormToDefaults,
+            loadCategories: loadCategories
+        };
+    }
 });
-
-// Handle browser back/forward navigation
-$(window).on('popstate', function() {
-    // Reset form loading states if user navigates away and back
-    $submitButton.prop('disabled', false).removeClass('loading');
-    $exportForm.removeClass('loading');
-});
-
-// Keyboard shortcuts
-$(document).on('keydown', function(e) {
-    // Ctrl/Cmd + Enter to submit form
-    if ((e.ctrlKey || e.metaKey) && e.keyCode === 13) {
-        if ($exportForm.length && $postTypeSelect.val()) {
-            $exportForm.submit();
-        }
-    }
-    
-    // Escape key to clear form errors
-    if (e.keyCode === 27) {
-        $postTypeError.hide();
-        $deleteConfirmationPlaceholder.empty();
-    }
-});
-
-// Auto-save form state to localStorage for persistence across browser sessions
-// (Only if browser supports localStorage)
-if (typeof(Storage) !== "undefined") {
-    // Save form state periodically
-    setInterval(function() {
-        saveFormState();
-    }, 30000); // Every 30 seconds
-
-    // Save on form change
-    $exportForm.on('change input', debounce(saveFormState, 1000));
-
-    function saveFormState() {
-        try {
-            var formState = {
-                post_type: $postTypeSelect.val(),
-                category: $categorySelect.val(),
-                author: $('#cpt_author').val(),
-                status: $('#cpt_status').val(),
-                start_date: $('#cpt_start_date').val(),
-                end_date: $('#cpt_end_date').val(),
-                save_folder: $saveFolderInput.val(),
-                compress: $('#cpt_compress').is(':checked'),
-                timestamp: Date.now()
-            };
-            localStorage.setItem('cpt_export_form_state', JSON.stringify(formState));
-        } catch(e) {
-            // Fail silently if localStorage is not available or full
-            console.warn('Could not save form state to localStorage:', e);
-        }
-    }
-}
-
-// Accessibility improvements
-function enhanceAccessibility() {
-    // Add ARIA labels for better screen reader support
-    $postTypeSelect.attr('aria-describedby', 'post-type-description');
-    $categorySelect.attr('aria-describedby', 'category-description');
-    
-    // Add live region for dynamic content
-    if (!$('#cpt-export-live-region').length) {
-        $('body').append('<div id="cpt-export-live-region" aria-live="polite" aria-atomic="true" style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;"></div>');
-    }
-    
-    var $liveRegion = $('#cpt-export-live-region');
-    
-    // Announce category loading
-    $categoryLoading.on('show', function() {
-        $liveRegion.text('Loading categories for selected post type');
-    });
-    
-    // Announce when categories are loaded
-    $categorySelect.on('change', function() {
-        var count = $(this).find('option').length - 1; // Subtract "All categories" option
-        if (count > 0) {
-            $liveRegion.text(count + ' categories available for filtering');
-        }
-    });
-}
-
-// Initialize accessibility enhancements
-enhanceAccessibility();
-
-// Development mode helpers (only in debug mode)
-if (window.cpt_export_debug) {
-    window.cptExportDebug = {
-        getFormData: function() {
-            return {
-                post_type: $postTypeSelect.val(),
-                category: $categorySelect.val(),
-                author: $('#cpt_author').val(),
-                status: $('#cpt_status').val(),
-                start_date: $('#cpt_start_date').val(),
-                end_date: $('#cpt_end_date').val(),
-                export_and_delete: $exportAndDeleteCheckbox.is(':checked'),
-                delete_permanently: $deletePermanentlyCheckbox.is(':checked'),
-                delete_media: $deleteMediaCheckbox.is(':checked'),
-                save_folder: $saveFolderInput.val(),
-                compress: $('#cpt_compress').is(':checked')
-            };
-        },
-        resetForm: resetFormToDefaults,
-        loadCategories: loadCategories
-    };
-}
