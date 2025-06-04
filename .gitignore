@@ -9,7 +9,7 @@ wp-config.php
 *.swo
 
 *.zip
-/tmp
+tmp/
 
 # Dependencies
 node_modules/

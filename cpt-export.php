@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CPT Export
  * Plugin URI: https://site2goal.co.il
- * Description: Export Custom Post Types to XML format with date range, author, and status filtering. Optionally delete after export.
+ * Description: Export Custom Post Types to XML format with date range, author, and status filtering. Optionally delete permanent or after export and save to a specific folder or download directly. Supports compression and media deletion.
  * Version: 1.1.0
  * Author: Mulli Bahr & AI
  * Author URI: https://site2goal.co.il
