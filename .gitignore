@@ -1,0 +1,16 @@
+# WordPress
+.htaccess
+wp-config.php
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+*.zip
+/tmp
+
+# Dependencies
+node_modules/
+vendor/
